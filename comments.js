@@ -1,33 +1,40 @@
 // create a web server
-const express = require('express');
-const app = express();
-const port = 3000;
+var http = require('http');
+var fs = require('fs');
+var url = require('url');
+var path = require('path');
 
-// create a comment
-app.post('/comments', (req, res) => {
-  res.send('You have created a comment');
-});
+// create server
+http.createServer(function(req, res) {
+    var pathname = url.parse(req.url).pathname;
+    var realPath = path.join(__dirname, pathname);
+    var ext = path.extname(realPath);
+    ext = ext ? ext.slice(1) : 'unknown';
+    fs.exists(realPath, function(exists) {
+        if (!exists) {
+            res.writeHead(404, {
+                'Content-Type': 'text/plain'
+            });
+            res.write('This request URL ' + pathname + ' was not found on this server.');
+            res.end();
+        } else {
+            fs.readFile(realPath, 'binary', function(err, file) {
+                if (err) {
+                    res.writeHead(500, {
+                        'Content-Type': 'text/plain'
+                    });
+                    res.end(err);
+                } else {
+                    var contentType = {
+                        'Content-Type': 'text/html'
+                    };
+                    res.writeHead(200, contentType);
+                    res.write(file, 'binary');
+                    res.end();
+                }
+            });
+        }
+    });
+}).listen(3000);
 
-// get all comments
-app.get('/comments', (req, res) => {
-  res.send('You have requested all comments');
-});
-
-// get a comment
-app.get('/comments/:id', (req, res) => {
-  res.send('You have requested a comment with id: ' + req.params.id);
-});
-
-// update a comment
-app.put('/comments/:id', (req, res) => {
-  res.send('You have updated a comment with id: ' + req.params.id);
-});
-
-// delete a comment
-app.delete('/comments/:id', (req, res) => {
-  res.send('You have deleted a comment with id: ' + req.params.id);
-});
-
-app.listen(port, () => {
-  console.log(`Server started on port ${port}`);
-});
+console.log('Server running at http://localhost:3000/');
